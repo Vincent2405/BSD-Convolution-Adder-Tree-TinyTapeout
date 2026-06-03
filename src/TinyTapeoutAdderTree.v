@@ -1095,19 +1095,19 @@ module TinyTapeoutAdderTree (
     .inTC( s25 ),
     .inBSD( s28 ),
     .bsdOut( s29 ),
-    .c( unused_c_i23 )
+    .c( unused_c_i24 )
   );
   \8bit_BSD_TC_Adder  \8bit_BSD_TC_Adder_i25 (
     .inTC( s7 ),
     .inBSD( s10 ),
     .bsdOut( s11 ),
-    .c( unused_c_i23 )
+    .c( unused_c_i25 )
   );
   \8bit_BSD_TC_Adder  \8bit_BSD_TC_Adder_i26 (
     .inTC( s26 ),
     .inBSD( s29 ),
     .bsdOut( s30 ),
-    .c( unused_c_i23 )
+    .c( unused_c_i26 )
   );
   \8bit_BSD_TC_Adder  \8bit_BSD_TC_Adder_i27 (
     .inTC( s8 ),
