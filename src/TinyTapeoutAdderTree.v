@@ -889,6 +889,10 @@ module TinyTapeoutAdderTree (
   wire [4:0] s33;
   wire [4:0] s34;
   wire [4:0] s35;
+  wire [1:0] unused_c_i23;
+  wire [1:0] unused_c_i24;
+  wire [1:0] unused_c_i25;
+  wire [1:0] unused_c_i26;
   wire s36;
   wire s37;
   wire s38;
@@ -1084,22 +1088,26 @@ module TinyTapeoutAdderTree (
   \8bit_BSD_TC_Adder  \8bit_BSD_TC_Adder_i23 (
     .inTC( s6 ),
     .inBSD( s9 ),
-    .bsdOut( s10 )
+    .bsdOut( s10 ),
+    .c( unused_c_i23 )
   );
   \8bit_BSD_TC_Adder  \8bit_BSD_TC_Adder_i24 (
     .inTC( s25 ),
     .inBSD( s28 ),
-    .bsdOut( s29 )
+    .bsdOut( s29 ),
+    .c( unused_c_i23 )
   );
   \8bit_BSD_TC_Adder  \8bit_BSD_TC_Adder_i25 (
     .inTC( s7 ),
     .inBSD( s10 ),
-    .bsdOut( s11 )
+    .bsdOut( s11 ),
+    .c( unused_c_i23 )
   );
   \8bit_BSD_TC_Adder  \8bit_BSD_TC_Adder_i26 (
     .inTC( s26 ),
     .inBSD( s29 ),
-    .bsdOut( s30 )
+    .bsdOut( s30 ),
+    .c( unused_c_i23 )
   );
   \8bit_BSD_TC_Adder  \8bit_BSD_TC_Adder_i27 (
     .inTC( s8 ),
