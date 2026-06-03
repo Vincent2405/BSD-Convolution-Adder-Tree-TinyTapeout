@@ -30,26 +30,6 @@ module Demux3
 endmodule
 
 
-module Mux_2x1_NBits #(
-    parameter Bits = 2
-)
-(
-    input [0:0] sel,
-    input [(Bits - 1):0] in_0,
-    input [(Bits - 1):0] in_1,
-    output reg [(Bits - 1):0] out
-);
-    always @ (*) begin
-        case (sel)
-            1'h0: out = in_0;
-            1'h1: out = in_1;
-            default:
-                out = 'h0;
-        endcase
-    end
-endmodule
-
-
 module DIG_Register_BUS #(
     parameter Bits = 1
 )
@@ -871,7 +851,6 @@ module TinyTapeoutAdderTree (
   input [7:0] ui_in,
   input clk,
   input [7:0] uio_in,
-  input rst,
   output [7:0] uo_out
 );
   wire [4:0] s0;
@@ -931,18 +910,19 @@ module TinyTapeoutAdderTree (
   wire s50;
   wire s51;
   wire s52;
-  wire [4:0] s53;
-  wire [1:0] s54;
-  wire [2:0] s55;
+  wire [1:0] s53;
+  wire [2:0] s54;
+  wire [7:0] s55;
   wire [7:0] s56;
   wire [7:0] s57;
   wire [7:0] s58;
-  wire [7:0] s59;
   wire write;
-  assign s53 = ui_in[4:0];
+  wire s59;
+  wire s60;
+  assign s35 = ui_in[4:0];
   assign s43 = uio_in[2:0];
-  assign s54 = uio_in[4:3];
-  assign s55 = uio_in[7:5];
+  assign s53 = uio_in[4:3];
+  assign s54 = uio_in[7:5];
   Demux3 #(
     .Default(0)
   )
@@ -958,29 +938,22 @@ module TinyTapeoutAdderTree (
     .out_6( s50 ),
     .out_7( s51 )
   );
-  Mux_2x1_NBits #(
-    .Bits(5)
-  )
-  Mux_2x1_NBits_i1 (
-    .sel( rst ),
-    .in_0( s53 ),
-    .in_1( 5'b0 ),
-    .out( s35 )
-  );
-  assign write = s55[2];
-  assign s52 = ((s44 & write) | rst);
-  assign s36 = ((s45 & write) | rst);
-  assign s37 = ((s46 & write) | rst);
-  assign s38 = ((s47 & write) | rst);
-  assign s39 = ((s48 & write) | rst);
-  assign s40 = ((s49 & write) | rst);
-  assign s41 = ((s50 & write) | rst);
-  assign s42 = ((s51 & write) | rst);
+  assign s59 = s54[0];
+  assign s60 = s54[1];
+  assign write = s54[2];
+  assign s52 = (s44 & write);
+  assign s36 = (s45 & write);
+  assign s37 = (s46 & write);
+  assign s38 = (s47 & write);
+  assign s39 = (s48 & write);
+  assign s40 = (s49 & write);
+  assign s41 = (s50 & write);
+  assign s42 = (s51 & write);
   // R1
   DIG_Register_BUS #(
     .Bits(5)
   )
-  DIG_Register_BUS_i2 (
+  DIG_Register_BUS_i1 (
     .D( s35 ),
     .C( clk ),
     .en( s36 ),
@@ -990,7 +963,7 @@ module TinyTapeoutAdderTree (
   DIG_Register_BUS #(
     .Bits(5)
   )
-  DIG_Register_BUS_i3 (
+  DIG_Register_BUS_i2 (
     .D( s35 ),
     .C( clk ),
     .en( s37 ),
@@ -1000,7 +973,7 @@ module TinyTapeoutAdderTree (
   DIG_Register_BUS #(
     .Bits(5)
   )
-  DIG_Register_BUS_i4 (
+  DIG_Register_BUS_i3 (
     .D( s35 ),
     .C( clk ),
     .en( s38 ),
@@ -1010,7 +983,7 @@ module TinyTapeoutAdderTree (
   DIG_Register_BUS #(
     .Bits(5)
   )
-  DIG_Register_BUS_i5 (
+  DIG_Register_BUS_i4 (
     .D( s35 ),
     .C( clk ),
     .en( s39 ),
@@ -1020,7 +993,7 @@ module TinyTapeoutAdderTree (
   DIG_Register_BUS #(
     .Bits(5)
   )
-  DIG_Register_BUS_i6 (
+  DIG_Register_BUS_i5 (
     .D( s35 ),
     .C( clk ),
     .en( s40 ),
@@ -1030,7 +1003,7 @@ module TinyTapeoutAdderTree (
   DIG_Register_BUS #(
     .Bits(5)
   )
-  DIG_Register_BUS_i7 (
+  DIG_Register_BUS_i6 (
     .D( s35 ),
     .C( clk ),
     .en( s41 ),
@@ -1040,7 +1013,7 @@ module TinyTapeoutAdderTree (
   DIG_Register_BUS #(
     .Bits(5)
   )
-  DIG_Register_BUS_i8 (
+  DIG_Register_BUS_i7 (
     .D( s35 ),
     .C( clk ),
     .en( s42 ),
@@ -1050,99 +1023,99 @@ module TinyTapeoutAdderTree (
   DIG_Register_BUS #(
     .Bits(5)
   )
-  DIG_Register_BUS_i9 (
+  DIG_Register_BUS_i8 (
     .D( s35 ),
     .C( clk ),
     .en( s52 ),
     .Q( s33 )
   );
-  \5auf8  \5auf8_i10 (
+  \5auf8  \5auf8_i9 (
     .in( s0 ),
     .ou5( s1 )
   );
-  \5auf8  \5auf8_i11 (
+  \5auf8  \5auf8_i10 (
     .in( s2 ),
     .ou5( s3 )
   );
-  \5auf8  \5auf8_i12 (
+  \5auf8  \5auf8_i11 (
     .in( s4 ),
     .ou5( s5 )
   );
-  \5auf8  \5auf8_i13 (
+  \5auf8  \5auf8_i12 (
     .in( s19 ),
     .ou5( s20 )
   );
-  \5auf8  \5auf8_i14 (
+  \5auf8  \5auf8_i13 (
     .in( s21 ),
     .ou5( s22 )
   );
-  \5auf8  \5auf8_i15 (
+  \5auf8  \5auf8_i14 (
     .in( s23 ),
     .ou5( s24 )
   );
-  conv5to8 conv5to8_i16 (
+  conv5to8 conv5to8_i15 (
     .in( s33 ),
     .\10bdd ( s9 )
   );
-  conv5to8 conv5to8_i17 (
+  conv5to8 conv5to8_i16 (
     .in( s34 ),
     .\10bdd ( s28 )
   );
-  shift1 shift1_i18 (
+  shift1 shift1_i17 (
     .in( s1 ),
     .out( s6 )
   );
-  shift2 shift2_i19 (
+  shift2 shift2_i18 (
     .in( s3 ),
     .out( s7 )
   );
-  shift3 shift3_i20 (
+  shift3 shift3_i19 (
     .in( s5 ),
     .out( s8 )
   );
-  shift1 shift1_i21 (
+  shift1 shift1_i20 (
     .in( s20 ),
     .out( s25 )
   );
-  shift2 shift2_i22 (
+  shift2 shift2_i21 (
     .in( s22 ),
     .out( s26 )
   );
-  shift3 shift3_i23 (
+  shift3 shift3_i22 (
     .in( s24 ),
     .out( s27 )
   );
-  \8bit_BSD_TC_Adder  \8bit_BSD_TC_Adder_i24 (
+  \8bit_BSD_TC_Adder  \8bit_BSD_TC_Adder_i23 (
     .inTC( s6 ),
     .inBSD( s9 ),
     .bsdOut( s10 ),
     .c( unused_c_i23 )
   );
-  \8bit_BSD_TC_Adder  \8bit_BSD_TC_Adder_i25 (
+  \8bit_BSD_TC_Adder  \8bit_BSD_TC_Adder_i24 (
     .inTC( s25 ),
     .inBSD( s28 ),
     .bsdOut( s29 ),
     .c( unused_c_i24 )
   );
-  \8bit_BSD_TC_Adder  \8bit_BSD_TC_Adder_i26 (
+  \8bit_BSD_TC_Adder  \8bit_BSD_TC_Adder_i25 (
     .inTC( s7 ),
     .inBSD( s10 ),
     .bsdOut( s11 ),
     .c( unused_c_i25 )
   );
-  \8bit_BSD_TC_Adder  \8bit_BSD_TC_Adder_i27 (
+  \8bit_BSD_TC_Adder  \8bit_BSD_TC_Adder_i26 (
     .inTC( s26 ),
     .inBSD( s29 ),
     .bsdOut( s30 ),
     .c( unused_c_i26 )
   );
-  \8bit_BSD_TC_Adder  \8bit_BSD_TC_Adder_i28 (
+  \8bit_BSD_TC_Adder  \8bit_BSD_TC_Adder_i27 (
     .inTC( s8 ),
     .inBSD( s11 ),
     .bsdOut( s12 ),
     .c( s13 )
   );
-  \8bit_BSD_TC_Adder  \8bit_BSD_TC_Adder_i29 (
+  \8bit_BSD_TC_Adder  \8bit_BSD_TC_Adder_i28 (
     .inTC( s27 ),
     .inBSD( s30 ),
     .bsdOut( s31 ),
@@ -1152,33 +1125,33 @@ module TinyTapeoutAdderTree (
   assign s14[17:16] = s13;
   assign s16[15:0] = s31;
   assign s16[17:16] = s32;
-  \18auf24  \18auf24_i30 (
+  \18auf24  \18auf24_i29 (
     .in( s14 ),
     .ou5( s15 )
   );
-  shift4 shift4_i31 (
+  shift4 shift4_i30 (
     .in( s16 ),
     .out( s17 )
   );
-  \13BitBSD  \13BitBSD_i32 (
+  \13BitBSD  \13BitBSD_i31 (
     .inA( s17 ),
     .inB( s15 ),
     .out( s18 )
   );
-  assign s59[3:0] = s18[27:24];
-  assign s59[7:4] = 4'b101;
-  assign s56 = s18[7:0];
-  assign s57 = s18[15:8];
-  assign s58 = s18[23:16];
+  assign s58[3:0] = s18[27:24];
+  assign s58[7:4] = 4'b101;
+  assign s55 = s18[7:0];
+  assign s56 = s18[15:8];
+  assign s57 = s18[23:16];
   Mux_4x1_NBits #(
     .Bits(8)
   )
-  Mux_4x1_NBits_i33 (
-    .sel( s54 ),
-    .in_0( s56 ),
-    .in_1( s57 ),
-    .in_2( s58 ),
-    .in_3( s59 ),
+  Mux_4x1_NBits_i32 (
+    .sel( s53 ),
+    .in_0( s55 ),
+    .in_1( s56 ),
+    .in_2( s57 ),
+    .in_3( s58 ),
     .out( uo_out )
   );
 endmodule
