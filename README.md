@@ -1,8 +1,44 @@
 ![](../../workflows/gds/badge.svg) ![](../../workflows/docs/badge.svg) ![](../../workflows/test/badge.svg) ![](../../workflows/fpga/badge.svg)
 
-# Tiny Tapeout Verilog Project Template
+# BSD Convolution Adder Tree
 
-- [Read the documentation for project](docs/info.md)
+A Tiny Tapeout chip that computes a **3×3 Gaussian convolution** of an image patch,
+entirely on-chip and fully in **Binary Signed Digit (BSD)** arithmetic.
+
+- [Read the project documentation](docs/info.md)
+
+## What it does
+
+You load the **9 raw 8-bit pixels** of a 3×3 patch into registers `R0–R8`; the chip
+returns the convolved value in BSD format.
+
+```
+[ R0 R1 R2 ]
+[ R3 R4 R5 ]   --(EN, 8 clocks)-->   Y = Σ ROM(bitplane_b) · 2^b   (BSD)
+[ R6 R7 R8 ]
+```
+
+How it works:
+- [see info.md](docs/info.md)
+- circuit can be found in docs/DigitalSimSchaltungen (top level circuit is TinyTapuoutAdderTree.dig)
+
+
+Signed-Digit encoding (2 bits/digit): `00 = -1`, `01 = 0`, `10 = 0`, `11 = +1`.
+Only the kernel changes for a different filter — the ROM contents, not the datapath.
+
+## How to test
+
+All I/O is multiplexed over `uio_in[7:0] = [WRITE, EN, outSel1, outSel0, regSel3..0]`:
+
+| step | action | `uio_in` |
+|------|--------|----------|
+| **Write** | put pixel on `ui_in`, one clock per register | `1 0 00 <regSel 0..8>` |
+| **Run**   | hold for **8 clocks** (bit-plane counter 0..7) | `0 1 00 0000` (`0x40`) |
+| **Read**  | 28-bit BSD result in four 8-bit chunks on `uo_out` | `0 0 <chunk> 0000` |
+
+[see info.md](docs/info.md)
+
+---
 
 ## What is Tiny Tapeout?
 
