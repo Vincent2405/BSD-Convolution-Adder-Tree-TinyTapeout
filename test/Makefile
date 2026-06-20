@@ -6,7 +6,7 @@ SIM ?= icarus
 FST ?= -fst # Use more efficient FST format
 TOPLEVEL_LANG ?= verilog
 SRC_DIR = $(PWD)/../src
-PROJECT_SOURCES = project.v TinyTapeoutAdderTree.v
+PROJECT_SOURCES = project.v TinyTapeoutAdderTree2.v
 
 ifneq ($(GATES),yes)
 
