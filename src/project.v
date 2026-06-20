@@ -18,7 +18,7 @@ module tt_um_Vincent2405_adder_tree (
 
   wire rst = ~rst_n;
 
-  TinyTapeoutAdderTree core (
+  TinyTapeoutAdderTree2 core (
     .ui_in  (ui_in),
     .clk    (clk),
     .uio_in (uio_in),
