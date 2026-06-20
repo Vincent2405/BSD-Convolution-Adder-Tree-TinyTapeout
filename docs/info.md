@@ -9,137 +9,139 @@ You can also include images in this folder and reference them in the markdown. E
 
 ## How it works
 
-SD format:
+This project computes a **3×3 Gaussian convolution** of an image patch fully on-chip,
+using bit-plane ROM decomposition and a **Binary Signed Digit (BSD)** adder tree.
+
+**Signed-Digit (SD) format** — two bits per digit:
+
+```
 00 => -1
-01 => 0
-10 => 0 
-11 => 1 
+01 =>  0
+10 =>  0
+11 => +1
+```
 
-reads 8 values in Registers R0-R7,
-adds 8 values in BSD format where each value is shifted by 1 digit resulting in:
-Y = R0 · 1 + R1 · 2 + R2 · 4 + R3 · 8 + R4 · 16 + R5 · 32 + R6 · 64 + R7 · 128
+**Data flow:**
 
-every Addition is performed in BSD format
-either BSD + TC => BSD or BSD + BSD=> BSD
+1. The 9 pixels of a 3×3 image patch are written into the registers **R0–R8** (8-bit each):
 
-output given in BSD format.
+   ```
+   [ R0  R1  R2 ]
+   [ R3  R4  R5 ]
+   [ R6  R7  R8 ]
+   ```
+
+2. The computation runs over the **8 bit positions** of the pixels. For each bit
+   position, one bit is taken from each of the 9 pixels to form a **9-bit address**.
+   This address indexes an **on-chip 512×5 ROM** that stores the *preadded* weight
+   sums of the fixed 3×3 kernel (here Gaussian `[1 2 1; 2 4 2; 1 2 1]`), giving a
+   **5-bit partial value** per bit position.
+
+3. Each bit position's partial value is weighted by `2^(bit position)` and accumulated.
+   Every addition is performed in **BSD format** (either `BSD + TC => BSD` or
+   `BSD + BSD => BSD`).
+
+   ```
+   Y = Σ  ROM(bitplane_b) · 2^b      (b = 0 .. 7)
+   ```
+
+   which equals the full Gaussian convolution sum of the 3×3 patch.
+
+4. The result `Y` is provided in **BSD format**.
+
+
 
 ## How to test
 
-Because Tiny Tapeout provides only 8 dedicated input bits and 8 dedicated output bits, the register inputs and result output are multiplexed.
+Tiny Tapeout provides only 8 dedicated input bits and 8 dedicated output bits, so the
+register inputs and the result output are **multiplexed** via `uio_in`.
 
-Control signals on uio_in
-uio_in[7]   => write enable
-uio_in[2:0] => register select for R0 to R7
-uio_in[4:3] => output chunk select
+**Control signals on `uio_in`:**
 
-During writing, uio_in[7] must be set to 1. This enables writing to the selected register.
+```
+uio_in[7]   => WRITE enable
+uio_in[6]   => EN   (run the convolution / bit-plane counter)
+uio_in[5:4] => output chunk select
+uio_in[3:0] => register select (R0 .. R8)
+```
 
-uio_in[7] = 1  => write enabled
-uio_in[7] = 0  => write disabled
+### 1) Write the 9 pixels
 
-After all registers have been loaded, uio_in[7] must be set back to 0. This prevents accidental overwriting of registers during readout.
+For each pixel:
 
-Writing registers:
-
-To write a value into a register:
-
-Put the input value on ui_in[7:0].
-Set uio_in[7] = 1.
-Set uio_in[2:0] to the target register index.
-Apply one clock cycle.
+- Put the pixel value on `ui_in[7:0]`.
+- Set `uio_in[7] = 1` (write enable), `uio_in[6] = 0` (EN off).
+- Set `uio_in[3:0]` to the target register index.
+- Apply one clock cycle.
 
 Register selection:
 
-uio_in[2:0] = 000 => R0
-uio_in[2:0] = 001 => R1
-uio_in[2:0] = 010 => R2
-uio_in[2:0] = 011 => R3
-uio_in[2:0] = 100 => R4
-uio_in[2:0] = 101 => R5
-uio_in[2:0] = 110 => R6
-uio_in[2:0] = 111 => R7
+```
+uio_in[3:0] = 0000 => R0      uio_in[3:0] = 0101 => R5
+uio_in[3:0] = 0001 => R1      uio_in[3:0] = 0110 => R6
+uio_in[3:0] = 0010 => R2      uio_in[3:0] = 0111 => R7
+uio_in[3:0] = 0011 => R3      uio_in[3:0] = 1000 => R8
+uio_in[3:0] = 0100 => R4
+```
 
-Example input values:
+Example pixels `[225, 59, 3, 46, 17, 42, 50, 181, 121]`:
 
-[2, 4, 8, 16, 8, 4, 2, 0]
+```
+ui_in  = 11100001   uio_in = 10000000   // write, R0   -> clock
+ui_in  = 00111011   uio_in = 10000001   // write, R1   -> clock
+ui_in  = 00000011   uio_in = 10000010   // write, R2   -> clock
+ui_in  = 00101110   uio_in = 10000011   // write, R3   -> clock
+ui_in  = 00010001   uio_in = 10000100   // write, R4   -> clock
+ui_in  = 00101010   uio_in = 10000101   // write, R5   -> clock
+ui_in  = 00110010   uio_in = 10000110   // write, R6   -> clock
+ui_in  = 10110101   uio_in = 10000111   // write, R7   -> clock
+ui_in  = 01111001   uio_in = 10001000   // write, R8   -> clock
+```
 
-Write sequence:
+### 2) Run the convolution (EN)
 
-ui_in  = 00000010
-uio_in = 10000000   // write enabled, select R0
-clock
+After all 9 registers are loaded, hold **`uio_in = 0100_0000` (EN = 1, WRITE = 0)**
+and apply **8 clock cycles**. The internal bit-plane counter steps through all 8 bit
+positions (0..7), performs the ROM lookups and fills the 8 internal partial registers;
+the BSD adder tree then holds the final result.
 
-ui_in  = 00000100
-uio_in = 10000001   // write enabled, select R1
-clock
+```
+uio_in = 01000000   // EN = 1
+clock x8
+```
 
-ui_in  = 00001000
-uio_in = 10000010   // write enabled, select R2
-clock
+### 3) Read the result
 
-ui_in  = 00010000
-uio_in = 10000011   // write enabled, select R3
-clock
+The BSD result is **28 bits** (14 SD digits), read in four 8-bit chunks on `uo_out[7:0]`,
+selected by `uio_in[5:4]` (WRITE = 0, EN = 0):
 
-ui_in  = 00001000
-uio_in = 10000100   // write enabled, select R4
-clock
+```
+uio_in = 00000000  => uo_out = o0  (bits  7:0)
+uio_in = 00010000  => uo_out = o1  (bits 15:8)
+uio_in = 00100000  => uo_out = o2  (bits 23:16)
+uio_in = 00110000  => uo_out = o3  (bits 31:24, top nibble is a 0101 marker)
+```
 
-ui_in  = 00000100
-uio_in = 10000101   // write enabled, select R5
-clock
+Reconstruct the raw value and decode (2 bits = 1 SD digit, 14 digits):
 
-ui_in  = 00000010
-uio_in = 10000110   // write enabled, select R6
-clock
-
-ui_in  = 00000000
-uio_in = 10000111   // write enabled, select R7
-clock
-
--writing done 
-
-uio_in = 00000000   // write disabled
-clock
-Reading the output
-
-The result ist lenght 26 bit so we need to multiplex through uo_out[7:0].
-
-The output chunk is selected using uio_in[4:3] 
-
-uio_in[4:3] = 00 => first  8 bits are laying on uo_out[0:7] : o0
-uio_in[4:3] = 01 => second 8 bits ": o1
-uio_in[4:3] = 10 => third  8 bits ": o2
-uio_in[4:3] = 11 => fourth 8 bits ": o3
-
-Read sequence:
-
-uio_in = 00000000
-uo_out now contains o0
-
-uio_in = 00001000
-uo_out now contains o1
-
-uio_in = 00010000
-uo_out now contains o2
-
-uio_in = 00011000
-uo_out now contains o3
-
-The full BSD result is reconstructed as:
-
-[o3 | o2 | o1 | o0]
-
+```
+raw = [ o3 | o2 | o1 | o0 ]      // use the low 28 bits
+Y   = Σ  SD(raw[2i+1:2i]) · 2^i  (i = 0 .. 13)
+```
 
 ## Real convolution usage
 
-For a real 3x3 image convolution, the values loaded into registers R0 to R7 should be the preadded weight sums of the 3x3 filter kernel.
+For a real 3×3 image convolution you simply load the **raw 8-bit pixel values** of the
+patch into R0–R8 — **no external preadd is needed anymore**; the on-chip 512×5 ROM does
+the kernel weighting internally:
 
-The circuit itself does not contain the full ROM. Instead, the ROM lookup can be simulated or calculated externally. The external ROM implements the lookup table for the fixed 3x3 filter kernel(for example gaussian).
+```
+[p1 p2 p3]
+[p4 p5 p6]   => load p1..p9 into R0..R8  =>  EN, 8 clocks  =>  read BSD result
+[p7 p8 p9]
+```
 
-For each bit position of the 8-bit pixel values, one bit from each of the nine pixels is used to form a 9-bit ROM address:
-
-[p1, p2, p3]
-[p4, p5, p6]  => 8 x 9-bit address => 512-entry ROM => 8 preadded values => load into R0 to R7 => BSD Out of complete Convolution 
-[p7, p8, p9]
+For each of the 8 bit positions, one bit from each of the 9 pixels forms a 9-bit ROM
+address; the ROM returns the preadded kernel sum for that bit position. To use a
+different fixed kernel (e.g. a sharpen or edge filter), only the 512×5 ROM contents
+change — the datapath stays the same.
