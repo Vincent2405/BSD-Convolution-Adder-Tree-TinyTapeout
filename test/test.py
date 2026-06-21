@@ -1,19 +1,23 @@
 # SPDX-FileCopyrightText: © 2024 Tiny Tapeout
 # SPDX-License-Identifier: Apache-2.0
 #
-# Test: echte Pixelwerte (0..255) in 9 Register w0..w8 schreiben, die HW rechnet
-# intern Bitebenen -> Preadd-ROM -> Adder-Tree -> BSD. Jetzt 9 UNABHAENGIGE Pixel
-# (en + sel8 sind gefixt).
+# Tests fuer TinyTapeoutAdderTreeMitSPI_HDC (kombiniert: Faltung + SPI-Reader + HDC).
 #
-# Pin-Belegung uio_in[7:0] = [WRITE, EN, outSel1, outSel0, regSel3..0]
-#   uio_in[7]    = WRITE   (1 = schreiben)
-#   uio_in[6]    = EN      (1 = Bitebenen-Counter laeuft / rechnen)
-#   uio_in[5:4]  = outSel  (welcher der 4 Lese-Chunks)
-#   uio_in[3:0]  = regSel  (Register 0..8)
+# NEUE Pin-Belegung uio_in[7:0] (uio7 = MODE):
+#   uio_in[7] = MODE      (0 = Faltung, 1 = SPI+HDC)
+#   uio_in[6] = outSel[1]  (in SPI-Mode ungenutzt)
+#   uio_in[5] = outSel[0]  (in SPI-Mode ungenutzt)
+#   uio_in[4] = write     | START   (je nach MODE)
+#   uio_in[1] = en        | MISO     (je nach MODE)
+#   uio_in[0/2/3]         = MOSI/SCK/CS -> AUSGAENGE (uio_oe=0x0D), hier nicht getrieben
 #
-#   Schreiben:  ui_in=Pixel, uio_in = 0x80 | regSel          (WRITE=1, EN=0)
-#   Rechnen:    uio_in = 0b0100_0000 (=0x40) DAUERHAFT        (EN=1)
-#   Lesen:      uio_in = chunk << 4                           (WRITE=0, EN=0)
+# Faltung (MODE=0): Register-Schreibzeiger AUTO-INKREMENTIERT (kein regSel mehr).
+#   Schreiben:  ui_in=Pixel, uio_in=0x10 (write=1)  -> 9x in Folge fuellt R0..R8
+#   Rechnen:    uio_in=0x02 (en=1) fuer 9 Takte
+#   Lesen:      uio_in=outSel<<5 (write=0, en=0)     -> 4 Chunks auf uo_out
+#
+# SPI+HDC (MODE=1): SPI liest 4x8bit (R0..R3) aus dem RAM, HDC rechnet
+#   BUNDLE = (R0 ^ R2) & (R3 ^ R1)  -> auf uo_out.
 
 import random
 
@@ -22,12 +26,34 @@ from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles
 
 
-FILTER = [1, 2, 1, 2, 4, 2, 1, 2, 1]   # palindromisch -> regSel i hat Gewicht FILTER[i]
+FILTER = [1, 2, 1, 2, 4, 2, 1, 2, 1]   # palindromisch -> Register i hat Gewicht FILTER[i]
 NUM_PIXELS = 9
-ENABLE = 1 << 6                         # uio_in: EN=1 (Bit6)
-ENABLE_CYCLES = 9                       # Bitebenen-Counter laeuft 0..7 -> 8 Schritte (+1 Reserve)
+ENABLE_CYCLES = 9                       # Bitebenen-Counter 0..7 -> 8 Schritte (+1 Reserve)
+
+# Bit-Positionen in uio_in
+MODE_BIT, OUTSEL1, OUTSEL0, WRITE_BIT, EN_BIT = 7, 6, 5, 4, 1
+START_BIT, MISO_BIT = 4, 1              # im SPI-Mode teilen sich write/START bzw. en/MISO die Pins
+MODE = 1 << MODE_BIT
 
 
+# ---------------------------------------------------------------- Clock
+_clk_task = None
+
+
+def ensure_clock(dut):
+    """Genau EINE Clock ueber alle Tests. Mehrere @cocotb.test() duerfen NICHT je
+    eine eigene Clock auf dut.clk starten -- konkurrierende Treiber verstuemmeln
+    den Takt (Test 2 sah sonst nur 0x00). Alte Clock killen, frische starten."""
+    global _clk_task
+    if _clk_task is not None:
+        try:
+            _clk_task.kill()
+        except Exception:
+            pass
+    _clk_task = cocotb.start_soon(Clock(dut.clk, 10, unit="us").start())
+
+
+# ---------------------------------------------------------------- BSD-Decode
 def decode_bsd_digit(two_bits: int) -> int:
     return {0b00: -1, 0b01: 0, 0b10: 0, 0b11: 1}[two_bits]
 
@@ -37,16 +63,21 @@ def decode_bsd_value(raw: int, digits: int) -> int:
                for i in range(digits))
 
 
-def make_write_select(register_index: int) -> int:
-    """WRITE=Bit7, regSel=Bit3..0 (EN=0, outSel=0)."""
-    assert 0 <= register_index <= 8
-    return (1 << 7) | (register_index & 0b1111)
+# ---------------------------------------------------------------- Faltung (MODE=0)
+def m0_write() -> int:
+    """write=1, en=0, MODE=0 -> Pixel ins naechste Register (Auto-Increment)."""
+    return 1 << WRITE_BIT
 
 
-def make_read_select(chunk_index: int) -> int:
-    """outSel=Bit5..4 (WRITE=0, EN=0)."""
-    assert 0 <= chunk_index <= 3
-    return (chunk_index & 0b11) << 4
+def m0_run() -> int:
+    """en=1, write=0, MODE=0 -> Bitebenen-Counter laeuft."""
+    return 1 << EN_BIT
+
+
+def m0_read(chunk: int) -> int:
+    """outSel=Bit6:5, write=0, en=0, MODE=0."""
+    assert 0 <= chunk <= 3
+    return ((chunk & 1) << OUTSEL0) | (((chunk >> 1) & 1) << OUTSEL1)
 
 
 def gaussian_expected(pixels: list[int]) -> int:
@@ -60,10 +91,18 @@ def random_pixels(rng: random.Random) -> list[int]:
     return [rng.randint(0, 255) for _ in range(NUM_PIXELS)]
 
 
+# ---------------------------------------------------------------- SPI+HDC (MODE=1)
+def hdc_expected(r: list[int]) -> int:
+    """HDC_Calc-Verdrahtung: BUNDLE = (R0 ^ R2) & (R3 ^ R1)."""
+    assert len(r) == 4
+    return (r[0] ^ r[2]) & (r[3] ^ r[1])
+
+
+# ---------------------------------------------------------------- Helpers
 async def reset_dut(dut):
     dut.ena.value = 1
     dut.ui_in.value = 0
-    dut.uio_in.value = 0
+    dut.uio_in.value = 0          # MODE=0, alle Steuersignale 0
     dut.rst_n.value = 0
     await ClockCycles(dut.clk, 10)
     dut.rst_n.value = 1
@@ -73,22 +112,22 @@ async def reset_dut(dut):
 async def run_one_matrix(dut, pixels: list[int], BSD_DIGITS: int = 14):
     expected = gaussian_expected(pixels)
 
-    # 9 Pixel in Register w0..w8 schreiben (regSel 0..8, WRITE=1, EN=0)
+    # 9 Pixel in Folge schreiben -> Auto-Increment fuellt R0..R8 (kein regSel)
     for reg in range(NUM_PIXELS):
         dut.ui_in.value = pixels[reg] & 0xFF
-        dut.uio_in.value = make_write_select(reg)
+        dut.uio_in.value = m0_write()
         await ClockCycles(dut.clk, 1)
 
-    # Rechnen: EN=1 dauerhaft, Bitebenen-Counter laeuft 0..7, fuellt o1..o8
+    # Rechnen: en=1 dauerhaft, Bitebenen-Counter 0..7
     dut.ui_in.value = 0
-    dut.uio_in.value = ENABLE
+    dut.uio_in.value = m0_run()
     await ClockCycles(dut.clk, ENABLE_CYCLES)
 
-    # BSD-Ergebnis in vier 8-bit-Chunks lesen (EN=0, WRITE=0 -> eingefroren)
+    # BSD-Ergebnis in vier 8-bit-Chunks lesen (eingefroren)
     raw_bsd = 0
     chunks = []
     for chunk in range(4):
-        dut.uio_in.value = make_read_select(chunk)
+        dut.uio_in.value = m0_read(chunk)
         await ClockCycles(dut.clk, 1)
         chunk_value = int(dut.uo_out.value) & 0xFF
         chunks.append(chunk_value)
@@ -98,43 +137,76 @@ async def run_one_matrix(dut, pixels: list[int], BSD_DIGITS: int = 14):
     return actual, expected, raw_bsd, chunks
 
 
+async def spi_read_hdc(dut, r_bytes: list[int]) -> int:
+    """Treibt den SPI-Reader (MODE=1) mit dem MISO-Strom fuer R0..R3, gibt uo_out (=HDC_Out)."""
+    assert len(r_bytes) == 4
+    # START-Puls (uio4), genau 1 Takt
+    dut.uio_in.value = MODE | (1 << START_BIT)
+    await ClockCycles(dut.clk, 1)
+    dut.uio_in.value = MODE                       # START low, MISO=0
+    # 24 SCK cmd+addr (MISO egal), je 2 CLK-Flanken (interner CLK = 2x SCK)
+    for _ in range(24):
+        dut.uio_in.value = MODE
+        await ClockCycles(dut.clk, 2)
+    # 32 Datenbits: R0..R3, je 8 bit MSB-first
+    bits = [(b >> pos) & 1 for b in r_bytes for pos in range(7, -1, -1)]
+    for bit in bits:
+        dut.uio_in.value = MODE | (bit << MISO_BIT)
+        await ClockCycles(dut.clk, 2)
+    dut.uio_in.value = MODE
+    await ClockCycles(dut.clk, 1)
+    return int(dut.uo_out.value) & 0xFF
+# ---------------------------------------------------------------- Tests
 @cocotb.test()
 async def test_gaussian_pixel_matrices(dut):
+    """MODE=0: 100 zufaellige 3x3-Patches durch die Faltung."""
     NUM_MATRICES = 100
     SEED = 1234
     rng = random.Random(SEED)
 
-    clock = Clock(dut.clk, 10, unit="us")
-    cocotb.start_soon(clock.start())
-
+    ensure_clock(dut)
     await reset_dut(dut)
 
-    dut._log.info(
-        f"Teste {NUM_MATRICES} zufaellige Pixel-Matrizen (seed={SEED}), "
-        f"FILTER={FILTER}"
-    )
+    dut._log.info(f"Faltung: {NUM_MATRICES} Matrizen (seed={SEED}), FILTER={FILTER}")
 
     for i in range(NUM_MATRICES):
         pixels = random_pixels(rng)
-
         actual, expected, raw_bsd, chunks = await run_one_matrix(dut, pixels)
-
-        dut._log.info(
-            f"[{i + 1:3d}/{NUM_MATRICES}] pixels={pixels} "
-            f"expected={expected} actual={actual}"
-        )
-
+        dut._log.info(f"[{i + 1:3d}/{NUM_MATRICES}] pixels={pixels} "
+                      f"expected={expected} actual={actual}")
         assert actual == expected, (
-            f"Matrix {i + 1}/{NUM_MATRICES} falsch: "
-            f"expected={expected}, got={actual}. "
-            f"pixels={pixels}, raw_bsd=0x{raw_bsd:08x}, "
-            f"raw_bsd=0b{raw_bsd:032b}, chunks={[hex(c) for c in chunks]}"
-        )
-
-        # Vor der naechsten Matrix zuruecksetzen -> definierte Startwerte
-        # (setzt voraus, dass rst den Bitebenen-Counter UND das Done-Flag s108
-        #  zuruecksetzt -- siehe 'Bug 2'. Falls Matrix 2+ stale Werte liefert,
-        #  ist das noch offen -> dann NUM_MATRICES=1 setzen.)
-        await reset_dut(dut)
+            f"Matrix {i + 1}/{NUM_MATRICES} falsch: expected={expected}, got={actual}. "
+            f"pixels={pixels}, raw_bsd=0b{raw_bsd:032b}, chunks={[hex(c) for c in chunks]}")
+        await reset_dut(dut)        # rst setzt Bitebenen-Counter UND Done-Flag zurueck
 
     dut._log.info(f"Alle {NUM_MATRICES} Matrizen korrekt.")
+#
+
+@cocotb.test()
+async def test_spi_hdc(dut):
+    """MODE=1: SPI liest R0..R3, HDC rechnet BUNDLE = (R0^R2) & (R3^R1)."""
+    NUM_VEC = 20
+    SEED = 7
+    rng = random.Random(SEED)
+
+    ensure_clock(dut)
+    await reset_dut(dut)
+
+    dut._log.info(f"SPI+HDC: {NUM_VEC} zufaellige R0..R3-Saetze (seed={SEED})")
+
+    # fester Referenzvektor wie im iverilog-Test (B3,5C,12,FF -> 0xA1)
+    vectors = [[0xB3, 0x5C, 0x12, 0xFF]] + [
+        [rng.randint(0, 255) for _ in range(4)] for _ in range(NUM_VEC)
+    ]
+
+    for n, r in enumerate(vectors):
+        actual = await spi_read_hdc(dut, r)
+        expected = hdc_expected(r)
+        dut._log.info(f"[{n + 1:2d}] R={[hex(x) for x in r]} "
+                      f"expected=0x{expected:02x} actual=0x{actual:02x}")
+        assert actual == expected, (
+            f"HDC falsch fuer R={[hex(x) for x in r]}: "
+            f"expected=0x{expected:02x}, got=0x{actual:02x}")
+        await reset_dut(dut)        # SPI-Schieberegister fuer naechsten Read leeren
+
+    dut._log.info(f"Alle {len(vectors)} SPI+HDC-Saetze korrekt.")
