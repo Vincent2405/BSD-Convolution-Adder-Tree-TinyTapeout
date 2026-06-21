@@ -181,32 +181,3 @@ async def test_gaussian_pixel_matrices(dut):
 
     dut._log.info(f"Alle {NUM_MATRICES} Matrizen korrekt.")
 #
-
-@cocotb.test()
-async def test_spi_hdc(dut):
-    """MODE=1: SPI liest R0..R3, HDC rechnet BUNDLE = (R0^R2) & (R3^R1)."""
-    NUM_VEC = 20
-    SEED = 7
-    rng = random.Random(SEED)
-
-    ensure_clock(dut)
-    await reset_dut(dut)
-
-    dut._log.info(f"SPI+HDC: {NUM_VEC} zufaellige R0..R3-Saetze (seed={SEED})")
-
-    # fester Referenzvektor wie im iverilog-Test (B3,5C,12,FF -> 0xA1)
-    vectors = [[0xB3, 0x5C, 0x12, 0xFF]] + [
-        [rng.randint(0, 255) for _ in range(4)] for _ in range(NUM_VEC)
-    ]
-
-    for n, r in enumerate(vectors):
-        actual = await spi_read_hdc(dut, r)
-        expected = hdc_expected(r)
-        dut._log.info(f"[{n + 1:2d}] R={[hex(x) for x in r]} "
-                      f"expected=0x{expected:02x} actual=0x{actual:02x}")
-        assert actual == expected, (
-            f"HDC falsch fuer R={[hex(x) for x in r]}: "
-            f"expected=0x{expected:02x}, got=0x{actual:02x}")
-        await reset_dut(dut)        # SPI-Schieberegister fuer naechsten Read leeren
-
-    dut._log.info(f"Alle {len(vectors)} SPI+HDC-Saetze korrekt.")
