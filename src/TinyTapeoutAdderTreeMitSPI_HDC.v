@@ -66,6 +66,24 @@ module DIG_Counter_Nbit
     end
 endmodule
 
+
+module Mux_2x1
+(
+    input [0:0] sel,
+    input in_0,
+    input in_1,
+    output reg out
+);
+    always @ (*) begin
+        case (sel)
+            1'h0: out = in_0;
+            1'h1: out = in_1;
+            default:
+                out = 'h0;
+        endcase
+    end
+endmodule
+
 module DIG_D_FF_1bit
 #(
     parameter Default = 0
@@ -91,24 +109,6 @@ module DIG_D_FF_1bit
 endmodule
 
 
-module Mux_2x1
-(
-    input [0:0] sel,
-    input in_0,
-    input in_1,
-    output reg out
-);
-    always @ (*) begin
-        case (sel)
-            1'h0: out = in_0;
-            1'h1: out = in_1;
-            default:
-                out = 'h0;
-        endcase
-    end
-endmodule
-
-
 module SPIReader (
   input A0,
   input A1,
@@ -129,6 +129,7 @@ module SPIReader (
   input CLK,
   input START,
   input MISO,
+  input rst,
   output MOSI,
   output [7:0] R3,
   output [7:0] R2,
@@ -309,31 +310,41 @@ module SPIReader (
   wire s110;
   wire MOSI_temp;
   wire s111;
-  wire DRUN;
+  wire s112;
   wire RUN;
   wire CS_temp;
-  wire DPHASE;
+  wire s113;
   wire PHASE;
   wire NPHASE;
+  wire DPHASE;
   wire SCK_temp;
+  wire s114;
   wire [6:0] COUNT;
   wire DONE_temp;
   wire RISEEN;
   wire LOADCYC;
+  wire DRUN;
+  wire s115;
   wire STARTPREV;
   wire MHIN;
+  Mux_2x1 Mux_2x1_i0 (
+    .sel( rst ),
+    .in_0( START ),
+    .in_1( 1'b1 ),
+    .out( s115 )
+  );
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i0 (
-    .D( START ),
+  DIG_D_FF_1bit_i1 (
+    .D( s115 ),
     .C( CLK ),
     .Q( STARTPREV )
   );
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i1 (
+  DIG_D_FF_1bit_i2 (
     .D( s1 ),
     .C( CLK ),
     .Q( QH0 )
@@ -341,7 +352,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i2 (
+  DIG_D_FF_1bit_i3 (
     .D( s3 ),
     .C( CLK ),
     .Q( QH1 )
@@ -349,7 +360,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i3 (
+  DIG_D_FF_1bit_i4 (
     .D( s5 ),
     .C( CLK ),
     .Q( QH2 )
@@ -357,7 +368,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i4 (
+  DIG_D_FF_1bit_i5 (
     .D( s7 ),
     .C( CLK ),
     .Q( QH3 )
@@ -365,7 +376,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i5 (
+  DIG_D_FF_1bit_i6 (
     .D( s9 ),
     .C( CLK ),
     .Q( QH4 )
@@ -373,7 +384,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i6 (
+  DIG_D_FF_1bit_i7 (
     .D( s11 ),
     .C( CLK ),
     .Q( QH5 )
@@ -381,7 +392,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i7 (
+  DIG_D_FF_1bit_i8 (
     .D( s13 ),
     .C( CLK ),
     .Q( QH6 )
@@ -389,7 +400,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i8 (
+  DIG_D_FF_1bit_i9 (
     .D( s15 ),
     .C( CLK ),
     .Q( QH7 )
@@ -397,7 +408,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i9 (
+  DIG_D_FF_1bit_i10 (
     .D( s17 ),
     .C( CLK ),
     .Q( QH8 )
@@ -405,7 +416,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i10 (
+  DIG_D_FF_1bit_i11 (
     .D( s19 ),
     .C( CLK ),
     .Q( QH9 )
@@ -413,7 +424,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i11 (
+  DIG_D_FF_1bit_i12 (
     .D( s21 ),
     .C( CLK ),
     .Q( QH10 )
@@ -421,7 +432,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i12 (
+  DIG_D_FF_1bit_i13 (
     .D( s23 ),
     .C( CLK ),
     .Q( QH11 )
@@ -429,7 +440,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i13 (
+  DIG_D_FF_1bit_i14 (
     .D( s25 ),
     .C( CLK ),
     .Q( QH12 )
@@ -437,7 +448,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i14 (
+  DIG_D_FF_1bit_i15 (
     .D( s27 ),
     .C( CLK ),
     .Q( QH13 )
@@ -445,7 +456,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i15 (
+  DIG_D_FF_1bit_i16 (
     .D( s29 ),
     .C( CLK ),
     .Q( QH14 )
@@ -453,7 +464,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i16 (
+  DIG_D_FF_1bit_i17 (
     .D( s31 ),
     .C( CLK ),
     .Q( QH15 )
@@ -461,7 +472,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i17 (
+  DIG_D_FF_1bit_i18 (
     .D( s33 ),
     .C( CLK ),
     .Q( QH16 )
@@ -469,7 +480,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i18 (
+  DIG_D_FF_1bit_i19 (
     .D( s35 ),
     .C( CLK ),
     .Q( QH17 )
@@ -477,7 +488,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i19 (
+  DIG_D_FF_1bit_i20 (
     .D( s37 ),
     .C( CLK ),
     .Q( QH18 )
@@ -485,7 +496,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i20 (
+  DIG_D_FF_1bit_i21 (
     .D( s39 ),
     .C( CLK ),
     .Q( QH19 )
@@ -493,7 +504,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i21 (
+  DIG_D_FF_1bit_i22 (
     .D( s41 ),
     .C( CLK ),
     .Q( QH20 )
@@ -501,7 +512,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i22 (
+  DIG_D_FF_1bit_i23 (
     .D( s43 ),
     .C( CLK ),
     .Q( QH21 )
@@ -509,7 +520,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i23 (
+  DIG_D_FF_1bit_i24 (
     .D( s45 ),
     .C( CLK ),
     .Q( QH22 )
@@ -517,7 +528,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i24 (
+  DIG_D_FF_1bit_i25 (
     .D( s47 ),
     .C( CLK ),
     .Q( QH23 )
@@ -525,7 +536,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i25 (
+  DIG_D_FF_1bit_i26 (
     .D( s49 ),
     .C( CLK ),
     .Q( QH24 )
@@ -533,7 +544,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i26 (
+  DIG_D_FF_1bit_i27 (
     .D( s51 ),
     .C( CLK ),
     .Q( QH25 )
@@ -541,7 +552,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i27 (
+  DIG_D_FF_1bit_i28 (
     .D( s53 ),
     .C( CLK ),
     .Q( QH26 )
@@ -549,7 +560,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i28 (
+  DIG_D_FF_1bit_i29 (
     .D( s55 ),
     .C( CLK ),
     .Q( QH27 )
@@ -557,7 +568,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i29 (
+  DIG_D_FF_1bit_i30 (
     .D( s57 ),
     .C( CLK ),
     .Q( QH28 )
@@ -565,7 +576,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i30 (
+  DIG_D_FF_1bit_i31 (
     .D( s59 ),
     .C( CLK ),
     .Q( QH29 )
@@ -573,7 +584,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i31 (
+  DIG_D_FF_1bit_i32 (
     .D( s61 ),
     .C( CLK ),
     .Q( QH30 )
@@ -581,12 +592,12 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i32 (
+  DIG_D_FF_1bit_i33 (
     .D( s63 ),
     .C( CLK ),
     .Q( QH31 )
   );
-  Mux_2x1 Mux_2x1_i33 (
+  Mux_2x1 Mux_2x1_i34 (
     .sel( SHIFT ),
     .in_0( A0 ),
     .in_1( QH31 ),
@@ -595,12 +606,12 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i34 (
+  DIG_D_FF_1bit_i35 (
     .D( s65 ),
     .C( CLK ),
     .Q( QH32 )
   );
-  Mux_2x1 Mux_2x1_i35 (
+  Mux_2x1 Mux_2x1_i36 (
     .sel( SHIFT ),
     .in_0( A1 ),
     .in_1( QH32 ),
@@ -609,12 +620,12 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i36 (
+  DIG_D_FF_1bit_i37 (
     .D( s67 ),
     .C( CLK ),
     .Q( QH33 )
   );
-  Mux_2x1 Mux_2x1_i37 (
+  Mux_2x1 Mux_2x1_i38 (
     .sel( SHIFT ),
     .in_0( A2 ),
     .in_1( QH33 ),
@@ -623,12 +634,12 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i38 (
+  DIG_D_FF_1bit_i39 (
     .D( s69 ),
     .C( CLK ),
     .Q( QH34 )
   );
-  Mux_2x1 Mux_2x1_i39 (
+  Mux_2x1 Mux_2x1_i40 (
     .sel( SHIFT ),
     .in_0( A3 ),
     .in_1( QH34 ),
@@ -637,12 +648,12 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i40 (
+  DIG_D_FF_1bit_i41 (
     .D( s71 ),
     .C( CLK ),
     .Q( QH35 )
   );
-  Mux_2x1 Mux_2x1_i41 (
+  Mux_2x1 Mux_2x1_i42 (
     .sel( SHIFT ),
     .in_0( A4 ),
     .in_1( QH35 ),
@@ -651,12 +662,12 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i42 (
+  DIG_D_FF_1bit_i43 (
     .D( s73 ),
     .C( CLK ),
     .Q( QH36 )
   );
-  Mux_2x1 Mux_2x1_i43 (
+  Mux_2x1 Mux_2x1_i44 (
     .sel( SHIFT ),
     .in_0( A5 ),
     .in_1( QH36 ),
@@ -665,12 +676,12 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i44 (
+  DIG_D_FF_1bit_i45 (
     .D( s75 ),
     .C( CLK ),
     .Q( QH37 )
   );
-  Mux_2x1 Mux_2x1_i45 (
+  Mux_2x1 Mux_2x1_i46 (
     .sel( SHIFT ),
     .in_0( A6 ),
     .in_1( QH37 ),
@@ -679,12 +690,12 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i46 (
+  DIG_D_FF_1bit_i47 (
     .D( s77 ),
     .C( CLK ),
     .Q( QH38 )
   );
-  Mux_2x1 Mux_2x1_i47 (
+  Mux_2x1 Mux_2x1_i48 (
     .sel( SHIFT ),
     .in_0( A7 ),
     .in_1( QH38 ),
@@ -693,12 +704,12 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i48 (
+  DIG_D_FF_1bit_i49 (
     .D( s79 ),
     .C( CLK ),
     .Q( QH39 )
   );
-  Mux_2x1 Mux_2x1_i49 (
+  Mux_2x1 Mux_2x1_i50 (
     .sel( SHIFT ),
     .in_0( A8 ),
     .in_1( QH39 ),
@@ -707,12 +718,12 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i50 (
+  DIG_D_FF_1bit_i51 (
     .D( s81 ),
     .C( CLK ),
     .Q( QH40 )
   );
-  Mux_2x1 Mux_2x1_i51 (
+  Mux_2x1 Mux_2x1_i52 (
     .sel( SHIFT ),
     .in_0( A9 ),
     .in_1( QH40 ),
@@ -721,12 +732,12 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i52 (
+  DIG_D_FF_1bit_i53 (
     .D( s83 ),
     .C( CLK ),
     .Q( QH41 )
   );
-  Mux_2x1 Mux_2x1_i53 (
+  Mux_2x1 Mux_2x1_i54 (
     .sel( SHIFT ),
     .in_0( A10 ),
     .in_1( QH41 ),
@@ -735,12 +746,12 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i54 (
+  DIG_D_FF_1bit_i55 (
     .D( s85 ),
     .C( CLK ),
     .Q( QH42 )
   );
-  Mux_2x1 Mux_2x1_i55 (
+  Mux_2x1 Mux_2x1_i56 (
     .sel( SHIFT ),
     .in_0( A11 ),
     .in_1( QH42 ),
@@ -749,12 +760,12 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i56 (
+  DIG_D_FF_1bit_i57 (
     .D( s87 ),
     .C( CLK ),
     .Q( QH43 )
   );
-  Mux_2x1 Mux_2x1_i57 (
+  Mux_2x1 Mux_2x1_i58 (
     .sel( SHIFT ),
     .in_0( A12 ),
     .in_1( QH43 ),
@@ -763,12 +774,12 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i58 (
+  DIG_D_FF_1bit_i59 (
     .D( s89 ),
     .C( CLK ),
     .Q( QH44 )
   );
-  Mux_2x1 Mux_2x1_i59 (
+  Mux_2x1 Mux_2x1_i60 (
     .sel( SHIFT ),
     .in_0( A13 ),
     .in_1( QH44 ),
@@ -777,12 +788,12 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i60 (
+  DIG_D_FF_1bit_i61 (
     .D( s91 ),
     .C( CLK ),
     .Q( QH45 )
   );
-  Mux_2x1 Mux_2x1_i61 (
+  Mux_2x1 Mux_2x1_i62 (
     .sel( SHIFT ),
     .in_0( A14 ),
     .in_1( QH45 ),
@@ -791,12 +802,12 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i62 (
+  DIG_D_FF_1bit_i63 (
     .D( s93 ),
     .C( CLK ),
     .Q( QH46 )
   );
-  Mux_2x1 Mux_2x1_i63 (
+  Mux_2x1 Mux_2x1_i64 (
     .sel( SHIFT ),
     .in_0( A15 ),
     .in_1( QH46 ),
@@ -805,7 +816,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i64 (
+  DIG_D_FF_1bit_i65 (
     .D( s95 ),
     .C( CLK ),
     .Q( QH47 )
@@ -813,7 +824,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i65 (
+  DIG_D_FF_1bit_i66 (
     .D( s97 ),
     .C( CLK ),
     .Q( QH48 )
@@ -821,7 +832,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i66 (
+  DIG_D_FF_1bit_i67 (
     .D( s99 ),
     .C( CLK ),
     .Q( QH49 )
@@ -829,7 +840,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i67 (
+  DIG_D_FF_1bit_i68 (
     .D( s101 ),
     .C( CLK ),
     .Q( QH50 )
@@ -837,7 +848,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i68 (
+  DIG_D_FF_1bit_i69 (
     .D( s103 ),
     .C( CLK ),
     .Q( QH51 )
@@ -845,7 +856,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i69 (
+  DIG_D_FF_1bit_i70 (
     .D( s105 ),
     .C( CLK ),
     .Q( QH52 )
@@ -853,7 +864,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i70 (
+  DIG_D_FF_1bit_i71 (
     .D( s107 ),
     .C( CLK ),
     .Q( QH53 )
@@ -861,7 +872,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i71 (
+  DIG_D_FF_1bit_i72 (
     .D( s109 ),
     .C( CLK ),
     .Q( QH54 )
@@ -869,7 +880,7 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i72 (
+  DIG_D_FF_1bit_i73 (
     .D( s111 ),
     .C( CLK ),
     .Q( MOSI_temp )
@@ -877,30 +888,30 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i73 (
-    .D( DRUN ),
+  DIG_D_FF_1bit_i74 (
+    .D( s112 ),
     .C( CLK ),
     .Q( RUN )
   );
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i74 (
-    .D( DPHASE ),
+  DIG_D_FF_1bit_i75 (
+    .D( s113 ),
     .C( CLK ),
     .Q( PHASE )
   );
   DIG_Counter_Nbit #(
     .Bits(7)
   )
-  DIG_Counter_Nbit_i75 (
+  DIG_Counter_Nbit_i76 (
     .en( SCK_temp ),
     .C( CLK ),
-    .clr( CS_temp ),
+    .clr( s114 ),
     .out( COUNT )
   );
   assign LOADCYC = ((START & ~ STARTPREV) & CS_temp);
-  Mux_2x1 Mux_2x1_i76 (
+  Mux_2x1 Mux_2x1_i77 (
     .sel( RISEEN ),
     .in_0( MISOHOLD ),
     .in_1( MISO ),
@@ -909,10 +920,28 @@ module SPIReader (
   DIG_D_FF_1bit #(
     .Default(0)
   )
-  DIG_D_FF_1bit_i77 (
+  DIG_D_FF_1bit_i78 (
     .D( MHIN ),
     .C( CLK ),
     .Q( MISOHOLD )
+  );
+  Mux_2x1 Mux_2x1_i79 (
+    .sel( rst ),
+    .in_0( DRUN ),
+    .in_1( 1'b0 ),
+    .out( s112 )
+  );
+  Mux_2x1 Mux_2x1_i80 (
+    .sel( rst ),
+    .in_0( DPHASE ),
+    .in_1( 1'b0 ),
+    .out( s113 )
+  );
+  Mux_2x1 Mux_2x1_i81 (
+    .sel( rst ),
+    .in_0( CS_temp ),
+    .in_1( 1'b1 ),
+    .out( s114 )
   );
   assign R3[0] = QH0;
   assign R3[1] = QH1;
@@ -951,241 +980,241 @@ module SPIReader (
   assign DONE_temp = ((COUNT[3] & COUNT[4]) & COUNT[5]);
   assign SCK_temp = (RUN & PHASE);
   assign SHIFT = ~ LOADCYC;
-  Mux_2x1 Mux_2x1_i78 (
+  Mux_2x1 Mux_2x1_i82 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( MISOHOLD ),
     .out( s0 )
   );
-  Mux_2x1 Mux_2x1_i79 (
+  Mux_2x1 Mux_2x1_i83 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH0 ),
     .out( s2 )
   );
-  Mux_2x1 Mux_2x1_i80 (
+  Mux_2x1 Mux_2x1_i84 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH1 ),
     .out( s4 )
   );
-  Mux_2x1 Mux_2x1_i81 (
+  Mux_2x1 Mux_2x1_i85 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH2 ),
     .out( s6 )
   );
-  Mux_2x1 Mux_2x1_i82 (
+  Mux_2x1 Mux_2x1_i86 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH3 ),
     .out( s8 )
   );
-  Mux_2x1 Mux_2x1_i83 (
+  Mux_2x1 Mux_2x1_i87 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH4 ),
     .out( s10 )
   );
-  Mux_2x1 Mux_2x1_i84 (
+  Mux_2x1 Mux_2x1_i88 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH5 ),
     .out( s12 )
   );
-  Mux_2x1 Mux_2x1_i85 (
+  Mux_2x1 Mux_2x1_i89 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH6 ),
     .out( s14 )
   );
-  Mux_2x1 Mux_2x1_i86 (
+  Mux_2x1 Mux_2x1_i90 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH7 ),
     .out( s16 )
   );
-  Mux_2x1 Mux_2x1_i87 (
+  Mux_2x1 Mux_2x1_i91 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH8 ),
     .out( s18 )
   );
-  Mux_2x1 Mux_2x1_i88 (
+  Mux_2x1 Mux_2x1_i92 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH9 ),
     .out( s20 )
   );
-  Mux_2x1 Mux_2x1_i89 (
+  Mux_2x1 Mux_2x1_i93 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH10 ),
     .out( s22 )
   );
-  Mux_2x1 Mux_2x1_i90 (
+  Mux_2x1 Mux_2x1_i94 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH11 ),
     .out( s24 )
   );
-  Mux_2x1 Mux_2x1_i91 (
+  Mux_2x1 Mux_2x1_i95 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH12 ),
     .out( s26 )
   );
-  Mux_2x1 Mux_2x1_i92 (
+  Mux_2x1 Mux_2x1_i96 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH13 ),
     .out( s28 )
   );
-  Mux_2x1 Mux_2x1_i93 (
+  Mux_2x1 Mux_2x1_i97 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH14 ),
     .out( s30 )
   );
-  Mux_2x1 Mux_2x1_i94 (
+  Mux_2x1 Mux_2x1_i98 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH15 ),
     .out( s32 )
   );
-  Mux_2x1 Mux_2x1_i95 (
+  Mux_2x1 Mux_2x1_i99 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH16 ),
     .out( s34 )
   );
-  Mux_2x1 Mux_2x1_i96 (
+  Mux_2x1 Mux_2x1_i100 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH17 ),
     .out( s36 )
   );
-  Mux_2x1 Mux_2x1_i97 (
+  Mux_2x1 Mux_2x1_i101 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH18 ),
     .out( s38 )
   );
-  Mux_2x1 Mux_2x1_i98 (
+  Mux_2x1 Mux_2x1_i102 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH19 ),
     .out( s40 )
   );
-  Mux_2x1 Mux_2x1_i99 (
+  Mux_2x1 Mux_2x1_i103 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH20 ),
     .out( s42 )
   );
-  Mux_2x1 Mux_2x1_i100 (
+  Mux_2x1 Mux_2x1_i104 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH21 ),
     .out( s44 )
   );
-  Mux_2x1 Mux_2x1_i101 (
+  Mux_2x1 Mux_2x1_i105 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH22 ),
     .out( s46 )
   );
-  Mux_2x1 Mux_2x1_i102 (
+  Mux_2x1 Mux_2x1_i106 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH23 ),
     .out( s48 )
   );
-  Mux_2x1 Mux_2x1_i103 (
+  Mux_2x1 Mux_2x1_i107 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH24 ),
     .out( s50 )
   );
-  Mux_2x1 Mux_2x1_i104 (
+  Mux_2x1 Mux_2x1_i108 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH25 ),
     .out( s52 )
   );
-  Mux_2x1 Mux_2x1_i105 (
+  Mux_2x1 Mux_2x1_i109 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH26 ),
     .out( s54 )
   );
-  Mux_2x1 Mux_2x1_i106 (
+  Mux_2x1 Mux_2x1_i110 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH27 ),
     .out( s56 )
   );
-  Mux_2x1 Mux_2x1_i107 (
+  Mux_2x1 Mux_2x1_i111 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH28 ),
     .out( s58 )
   );
-  Mux_2x1 Mux_2x1_i108 (
+  Mux_2x1 Mux_2x1_i112 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH29 ),
     .out( s60 )
   );
-  Mux_2x1 Mux_2x1_i109 (
+  Mux_2x1 Mux_2x1_i113 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH30 ),
     .out( s62 )
   );
-  Mux_2x1 Mux_2x1_i110 (
+  Mux_2x1 Mux_2x1_i114 (
     .sel( SHIFT ),
     .in_0( 1'b1 ),
     .in_1( QH47 ),
     .out( s96 )
   );
-  Mux_2x1 Mux_2x1_i111 (
+  Mux_2x1 Mux_2x1_i115 (
     .sel( SHIFT ),
     .in_0( 1'b1 ),
     .in_1( QH48 ),
     .out( s98 )
   );
-  Mux_2x1 Mux_2x1_i112 (
+  Mux_2x1 Mux_2x1_i116 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH49 ),
     .out( s100 )
   );
-  Mux_2x1 Mux_2x1_i113 (
+  Mux_2x1 Mux_2x1_i117 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH50 ),
     .out( s102 )
   );
-  Mux_2x1 Mux_2x1_i114 (
+  Mux_2x1 Mux_2x1_i118 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH51 ),
     .out( s104 )
   );
-  Mux_2x1 Mux_2x1_i115 (
+  Mux_2x1 Mux_2x1_i119 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH52 ),
     .out( s106 )
   );
-  Mux_2x1 Mux_2x1_i116 (
+  Mux_2x1 Mux_2x1_i120 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH53 ),
     .out( s108 )
   );
-  Mux_2x1 Mux_2x1_i117 (
+  Mux_2x1 Mux_2x1_i121 (
     .sel( SHIFT ),
     .in_0( 1'b0 ),
     .in_1( QH54 ),
@@ -1195,337 +1224,337 @@ module SPIReader (
   assign RISEEN = (RUN & NPHASE);
   assign REGEN = (LOADCYC | SCK_temp);
   assign DRUN = (LOADCYC | (RUN & ~ DONE_temp));
-  Mux_2x1 Mux_2x1_i118 (
+  Mux_2x1 Mux_2x1_i122 (
     .sel( REGEN ),
     .in_0( QH0 ),
     .in_1( s0 ),
     .out( s1 )
   );
-  Mux_2x1 Mux_2x1_i119 (
+  Mux_2x1 Mux_2x1_i123 (
     .sel( REGEN ),
     .in_0( QH1 ),
     .in_1( s2 ),
     .out( s3 )
   );
-  Mux_2x1 Mux_2x1_i120 (
+  Mux_2x1 Mux_2x1_i124 (
     .sel( REGEN ),
     .in_0( QH2 ),
     .in_1( s4 ),
     .out( s5 )
   );
-  Mux_2x1 Mux_2x1_i121 (
+  Mux_2x1 Mux_2x1_i125 (
     .sel( REGEN ),
     .in_0( QH3 ),
     .in_1( s6 ),
     .out( s7 )
   );
-  Mux_2x1 Mux_2x1_i122 (
+  Mux_2x1 Mux_2x1_i126 (
     .sel( REGEN ),
     .in_0( QH4 ),
     .in_1( s8 ),
     .out( s9 )
   );
-  Mux_2x1 Mux_2x1_i123 (
+  Mux_2x1 Mux_2x1_i127 (
     .sel( REGEN ),
     .in_0( QH5 ),
     .in_1( s10 ),
     .out( s11 )
   );
-  Mux_2x1 Mux_2x1_i124 (
+  Mux_2x1 Mux_2x1_i128 (
     .sel( REGEN ),
     .in_0( QH6 ),
     .in_1( s12 ),
     .out( s13 )
   );
-  Mux_2x1 Mux_2x1_i125 (
+  Mux_2x1 Mux_2x1_i129 (
     .sel( REGEN ),
     .in_0( QH7 ),
     .in_1( s14 ),
     .out( s15 )
   );
-  Mux_2x1 Mux_2x1_i126 (
+  Mux_2x1 Mux_2x1_i130 (
     .sel( REGEN ),
     .in_0( QH8 ),
     .in_1( s16 ),
     .out( s17 )
   );
-  Mux_2x1 Mux_2x1_i127 (
+  Mux_2x1 Mux_2x1_i131 (
     .sel( REGEN ),
     .in_0( QH9 ),
     .in_1( s18 ),
     .out( s19 )
   );
-  Mux_2x1 Mux_2x1_i128 (
+  Mux_2x1 Mux_2x1_i132 (
     .sel( REGEN ),
     .in_0( QH10 ),
     .in_1( s20 ),
     .out( s21 )
   );
-  Mux_2x1 Mux_2x1_i129 (
+  Mux_2x1 Mux_2x1_i133 (
     .sel( REGEN ),
     .in_0( QH11 ),
     .in_1( s22 ),
     .out( s23 )
   );
-  Mux_2x1 Mux_2x1_i130 (
+  Mux_2x1 Mux_2x1_i134 (
     .sel( REGEN ),
     .in_0( QH12 ),
     .in_1( s24 ),
     .out( s25 )
   );
-  Mux_2x1 Mux_2x1_i131 (
+  Mux_2x1 Mux_2x1_i135 (
     .sel( REGEN ),
     .in_0( QH13 ),
     .in_1( s26 ),
     .out( s27 )
   );
-  Mux_2x1 Mux_2x1_i132 (
+  Mux_2x1 Mux_2x1_i136 (
     .sel( REGEN ),
     .in_0( QH14 ),
     .in_1( s28 ),
     .out( s29 )
   );
-  Mux_2x1 Mux_2x1_i133 (
+  Mux_2x1 Mux_2x1_i137 (
     .sel( REGEN ),
     .in_0( QH15 ),
     .in_1( s30 ),
     .out( s31 )
   );
-  Mux_2x1 Mux_2x1_i134 (
+  Mux_2x1 Mux_2x1_i138 (
     .sel( REGEN ),
     .in_0( QH16 ),
     .in_1( s32 ),
     .out( s33 )
   );
-  Mux_2x1 Mux_2x1_i135 (
+  Mux_2x1 Mux_2x1_i139 (
     .sel( REGEN ),
     .in_0( QH17 ),
     .in_1( s34 ),
     .out( s35 )
   );
-  Mux_2x1 Mux_2x1_i136 (
+  Mux_2x1 Mux_2x1_i140 (
     .sel( REGEN ),
     .in_0( QH18 ),
     .in_1( s36 ),
     .out( s37 )
   );
-  Mux_2x1 Mux_2x1_i137 (
+  Mux_2x1 Mux_2x1_i141 (
     .sel( REGEN ),
     .in_0( QH19 ),
     .in_1( s38 ),
     .out( s39 )
   );
-  Mux_2x1 Mux_2x1_i138 (
+  Mux_2x1 Mux_2x1_i142 (
     .sel( REGEN ),
     .in_0( QH20 ),
     .in_1( s40 ),
     .out( s41 )
   );
-  Mux_2x1 Mux_2x1_i139 (
+  Mux_2x1 Mux_2x1_i143 (
     .sel( REGEN ),
     .in_0( QH21 ),
     .in_1( s42 ),
     .out( s43 )
   );
-  Mux_2x1 Mux_2x1_i140 (
+  Mux_2x1 Mux_2x1_i144 (
     .sel( REGEN ),
     .in_0( QH22 ),
     .in_1( s44 ),
     .out( s45 )
   );
-  Mux_2x1 Mux_2x1_i141 (
+  Mux_2x1 Mux_2x1_i145 (
     .sel( REGEN ),
     .in_0( QH23 ),
     .in_1( s46 ),
     .out( s47 )
   );
-  Mux_2x1 Mux_2x1_i142 (
+  Mux_2x1 Mux_2x1_i146 (
     .sel( REGEN ),
     .in_0( QH24 ),
     .in_1( s48 ),
     .out( s49 )
   );
-  Mux_2x1 Mux_2x1_i143 (
+  Mux_2x1 Mux_2x1_i147 (
     .sel( REGEN ),
     .in_0( QH25 ),
     .in_1( s50 ),
     .out( s51 )
   );
-  Mux_2x1 Mux_2x1_i144 (
+  Mux_2x1 Mux_2x1_i148 (
     .sel( REGEN ),
     .in_0( QH26 ),
     .in_1( s52 ),
     .out( s53 )
   );
-  Mux_2x1 Mux_2x1_i145 (
+  Mux_2x1 Mux_2x1_i149 (
     .sel( REGEN ),
     .in_0( QH27 ),
     .in_1( s54 ),
     .out( s55 )
   );
-  Mux_2x1 Mux_2x1_i146 (
+  Mux_2x1 Mux_2x1_i150 (
     .sel( REGEN ),
     .in_0( QH28 ),
     .in_1( s56 ),
     .out( s57 )
   );
-  Mux_2x1 Mux_2x1_i147 (
+  Mux_2x1 Mux_2x1_i151 (
     .sel( REGEN ),
     .in_0( QH29 ),
     .in_1( s58 ),
     .out( s59 )
   );
-  Mux_2x1 Mux_2x1_i148 (
+  Mux_2x1 Mux_2x1_i152 (
     .sel( REGEN ),
     .in_0( QH30 ),
     .in_1( s60 ),
     .out( s61 )
   );
-  Mux_2x1 Mux_2x1_i149 (
+  Mux_2x1 Mux_2x1_i153 (
     .sel( REGEN ),
     .in_0( QH31 ),
     .in_1( s62 ),
     .out( s63 )
   );
-  Mux_2x1 Mux_2x1_i150 (
+  Mux_2x1 Mux_2x1_i154 (
     .sel( REGEN ),
     .in_0( QH32 ),
     .in_1( s64 ),
     .out( s65 )
   );
-  Mux_2x1 Mux_2x1_i151 (
+  Mux_2x1 Mux_2x1_i155 (
     .sel( REGEN ),
     .in_0( QH33 ),
     .in_1( s66 ),
     .out( s67 )
   );
-  Mux_2x1 Mux_2x1_i152 (
+  Mux_2x1 Mux_2x1_i156 (
     .sel( REGEN ),
     .in_0( QH34 ),
     .in_1( s68 ),
     .out( s69 )
   );
-  Mux_2x1 Mux_2x1_i153 (
+  Mux_2x1 Mux_2x1_i157 (
     .sel( REGEN ),
     .in_0( QH35 ),
     .in_1( s70 ),
     .out( s71 )
   );
-  Mux_2x1 Mux_2x1_i154 (
+  Mux_2x1 Mux_2x1_i158 (
     .sel( REGEN ),
     .in_0( QH36 ),
     .in_1( s72 ),
     .out( s73 )
   );
-  Mux_2x1 Mux_2x1_i155 (
+  Mux_2x1 Mux_2x1_i159 (
     .sel( REGEN ),
     .in_0( QH37 ),
     .in_1( s74 ),
     .out( s75 )
   );
-  Mux_2x1 Mux_2x1_i156 (
+  Mux_2x1 Mux_2x1_i160 (
     .sel( REGEN ),
     .in_0( QH38 ),
     .in_1( s76 ),
     .out( s77 )
   );
-  Mux_2x1 Mux_2x1_i157 (
+  Mux_2x1 Mux_2x1_i161 (
     .sel( REGEN ),
     .in_0( QH39 ),
     .in_1( s78 ),
     .out( s79 )
   );
-  Mux_2x1 Mux_2x1_i158 (
+  Mux_2x1 Mux_2x1_i162 (
     .sel( REGEN ),
     .in_0( QH40 ),
     .in_1( s80 ),
     .out( s81 )
   );
-  Mux_2x1 Mux_2x1_i159 (
+  Mux_2x1 Mux_2x1_i163 (
     .sel( REGEN ),
     .in_0( QH41 ),
     .in_1( s82 ),
     .out( s83 )
   );
-  Mux_2x1 Mux_2x1_i160 (
+  Mux_2x1 Mux_2x1_i164 (
     .sel( REGEN ),
     .in_0( QH42 ),
     .in_1( s84 ),
     .out( s85 )
   );
-  Mux_2x1 Mux_2x1_i161 (
+  Mux_2x1 Mux_2x1_i165 (
     .sel( REGEN ),
     .in_0( QH43 ),
     .in_1( s86 ),
     .out( s87 )
   );
-  Mux_2x1 Mux_2x1_i162 (
+  Mux_2x1 Mux_2x1_i166 (
     .sel( REGEN ),
     .in_0( QH44 ),
     .in_1( s88 ),
     .out( s89 )
   );
-  Mux_2x1 Mux_2x1_i163 (
+  Mux_2x1 Mux_2x1_i167 (
     .sel( REGEN ),
     .in_0( QH45 ),
     .in_1( s90 ),
     .out( s91 )
   );
-  Mux_2x1 Mux_2x1_i164 (
+  Mux_2x1 Mux_2x1_i168 (
     .sel( REGEN ),
     .in_0( QH46 ),
     .in_1( s92 ),
     .out( s93 )
   );
-  Mux_2x1 Mux_2x1_i165 (
+  Mux_2x1 Mux_2x1_i169 (
     .sel( REGEN ),
     .in_0( QH47 ),
     .in_1( s94 ),
     .out( s95 )
   );
-  Mux_2x1 Mux_2x1_i166 (
+  Mux_2x1 Mux_2x1_i170 (
     .sel( REGEN ),
     .in_0( QH48 ),
     .in_1( s96 ),
     .out( s97 )
   );
-  Mux_2x1 Mux_2x1_i167 (
+  Mux_2x1 Mux_2x1_i171 (
     .sel( REGEN ),
     .in_0( QH49 ),
     .in_1( s98 ),
     .out( s99 )
   );
-  Mux_2x1 Mux_2x1_i168 (
+  Mux_2x1 Mux_2x1_i172 (
     .sel( REGEN ),
     .in_0( QH50 ),
     .in_1( s100 ),
     .out( s101 )
   );
-  Mux_2x1 Mux_2x1_i169 (
+  Mux_2x1 Mux_2x1_i173 (
     .sel( REGEN ),
     .in_0( QH51 ),
     .in_1( s102 ),
     .out( s103 )
   );
-  Mux_2x1 Mux_2x1_i170 (
+  Mux_2x1 Mux_2x1_i174 (
     .sel( REGEN ),
     .in_0( QH52 ),
     .in_1( s104 ),
     .out( s105 )
   );
-  Mux_2x1 Mux_2x1_i171 (
+  Mux_2x1 Mux_2x1_i175 (
     .sel( REGEN ),
     .in_0( QH53 ),
     .in_1( s106 ),
     .out( s107 )
   );
-  Mux_2x1 Mux_2x1_i172 (
+  Mux_2x1 Mux_2x1_i176 (
     .sel( REGEN ),
     .in_0( QH54 ),
     .in_1( s108 ),
     .out( s109 )
   );
-  Mux_2x1 Mux_2x1_i173 (
+  Mux_2x1 Mux_2x1_i177 (
     .sel( REGEN ),
     .in_0( MOSI_temp ),
     .in_1( s110 ),
@@ -1581,13 +1610,13 @@ endmodule
 
 
 module HDC_Calc (
-  input [7:0] R1,
-  input [7:0] R2,
   input [7:0] R3,
-  input [7:0] R4,
+  input [7:0] R2,
+  input [7:0] R0,
+  input [7:0] R1,
   output [7:0] BUNDLE
 );
-  assign BUNDLE = ((R1 ^ R2) & (R3 ^ R4));
+  assign BUNDLE = ((R3 ^ R2) & (R0 ^ R1));
 endmodule
 
 module DIG_Register_BUS #(
@@ -3779,6 +3808,7 @@ module TinyTapeoutAdderTreeMitSPI_HDC (
     .CLK( clk ),
     .START( startSPI ),
     .MISO( miso ),
+    .rst( rst ),
     .MOSI( \[uio0]  ),
     .R3( s75 ),
     .R2( s76 ),
@@ -3805,10 +3835,10 @@ module TinyTapeoutAdderTreeMitSPI_HDC (
     .out_8( s51 )
   );
   HDC_Calc HDC_Calc_i6 (
-    .R1( s78 ),
-    .R2( s76 ),
     .R3( s75 ),
-    .R4( s77 ),
+    .R2( s76 ),
+    .R0( s78 ),
+    .R1( s77 ),
     .BUNDLE( HDC_Out )
   );
   assign s52 = ((s43 & write) | rst);
