@@ -10,7 +10,7 @@ A Tiny Tapeout chip with **two modes**, selected by `uio_in[7]` (MODE):
   small **Hyperdimensional Computing** core binds & bundles them.
 
 - [Read the project documentation](docs/info.md)
-- Circuits are in `docs/DigitalSimSchaltungen` (built in [hneemann/Digital](https://github.com/hneemann/Digital)).
+- Circuits are in `docs/DigitalSimSchaltungen` (TinyTapeoutAdderTree.dig)(built in [hneemann/Digital](https://github.com/hneemann/Digital)).
 
 ## MODE 0 — Convolution
 
