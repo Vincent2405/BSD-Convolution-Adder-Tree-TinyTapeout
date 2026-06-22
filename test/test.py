@@ -134,6 +134,7 @@ async def test_gaussian_pixel_matrices(dut):
         pixels = [rng.randint(0, 255) for _ in range(NUM_PIXELS)]
         actual = await run_one_matrix(dut, pixels)
         expected = sum(p * w for p, w in zip(pixels, FILTER))
+        dut._log.info(f"[{i+1:3d}/100] matrix={pixels} expected={expected} actual={actual}")
         assert actual == expected, f"Matrix {i+1}: erwartet {expected}, bekam {actual} (pixels={pixels})"
         await reset_dut(dut)
 
@@ -148,5 +149,6 @@ async def test_spi_hdc(dut):
     for r in vectors:
         actual = await spi_read_hdc(dut, r)
         expected = hdc_expected(r)
+        dut._log.info(f"R={[hex(x) for x in r]} expected=0x{expected:02x} actual=0x{actual:02x}")
         assert actual == expected, f"R={[hex(x) for x in r]}: erwartet 0x{expected:02x}, bekam 0x{actual:02x}"
         await reset_dut(dut)
