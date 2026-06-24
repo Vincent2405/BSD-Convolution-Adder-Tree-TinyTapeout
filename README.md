@@ -70,6 +70,9 @@ on `uo_out`. The SPI clock `SCK` runs at half the chip clock (one bit = 2 clocks
 see [docs/info.md](docs/info.md). 
 
 ---
+## 3D Viewer
+
+[see] (https://gds-viewer.tinytapeout.com/?model=https://vincent2405.github.io/BSD-Convolution-Adder-Tree-TinyTapeout/tinytapeout.oas&pdk=gf180mcuD)
 
 ## What is Tiny Tapeout?
 
